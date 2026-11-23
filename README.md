@@ -28,7 +28,7 @@ npm install
 npm run dev                         # http://localhost:5173
 ```
 
-The frontend talks to `http://127.0.0.1:8000` by default. Set `VITE_API_URL` in `frontend/.env.local` to point elsewhere.
+The frontend talks to `http://127.0.0.1:8000` in `npm run dev` and to the deployed API (`https://on-premise-research-agent.onrender.com`) in production builds. Set `VITE_API_URL` to override either.
 
 **Using a local model instead of Groq:** install [Ollama](https://ollama.com), run `ollama pull qwen3.5:4b`, and leave `GROQ_API_KEY` empty (or set `LLM_PROVIDER=ollama`).
 
@@ -48,4 +48,4 @@ Settings come from environment variables, which override the git-ignored `.env`.
 | `FIRECRAWL_API_KEY`, `FIRECRAWL_DAILY_BUDGET`, `FIRECRAWL_MONTHLY_BUDGET` | Firecrawl scrape and crawl | disabled |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Store history in Turso instead of local SQLite | local SQLite |
 | `HISTORY_DB` | Path of the local history database | `.research_agent/history.sqlite3` |
-| `CORS_ORIGINS` | Comma-separated frontend origins, no trailing slash | `http://localhost:5173,http://127.0.0.1:5173` |
+| `CORS_ORIGINS` | Comma-separated frontend origins, no trailing slash | localhost:5173, 127.0.0.1:5173 and the Vercel site |
