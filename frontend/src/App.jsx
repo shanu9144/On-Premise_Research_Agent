@@ -6,7 +6,9 @@ import {
 } from 'lucide-react'
 import './App.css'
 
-const apiBase = () => (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
+const DEPLOYED_API = 'https://on-premise-research-agent.onrender.com'
+// VITE_API_URL wins; otherwise production builds use the deployed API and `npm run dev` uses the local one.
+const apiBase = () => (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEPLOYED_API : 'http://127.0.0.1:8000')).replace(/\/$/, '')
 
 // Anonymous per-browser ID so each visitor only sees their own history.
 function clientId() {

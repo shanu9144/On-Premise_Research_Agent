@@ -24,7 +24,8 @@ DEFAULT_MODEL = "qwen3.5:4b"
 GROQ_MODEL = setting("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_PAGE_CHARS = 1500
 app = FastAPI(title="Fieldnotes Research API", version="1.0")
-cors_origins = [origin.strip().rstrip("/") for origin in setting("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()]
+DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://on-premise-research-agent.vercel.app"
+cors_origins = [origin.strip().rstrip("/") for origin in setting("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,

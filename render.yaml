@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: fieldnotes-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn research_agent:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: LLM_PROVIDER
+        value: groq
+      # Secrets: Render asks for these values when you create the Blueprint.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: TAVILY_DAILY_BUDGET
+        value: "30"
+      - key: TAVILY_MONTHLY_BUDGET
+        value: "900"
+      # Your Vercel URL without a trailing slash, e.g. https://fieldnotes.vercel.app
+      - key: CORS_ORIGINS
+        value: https://on-premise-research-agent.vercel.app
