@@ -101,19 +101,59 @@ def summarize(query, pages, model):
         content = client.chat(model=model, messages=messages, think=False, options={"num_ctx": 16384}).message.content
     if not content or not content.strip():
         raise ValueError("The model returned an empty response.")
-    return check_answer(content.strip())
+    return check_answer(clean_markdown(content))
 
 
-def save_digest(digest, pages, output_dir):
+TYPOGRAPHY_FIXES = str.maketrans({
+    "\u202f": " ", "\u00a0": " ", "\u2007": " ", "\u2009": " ", "\u200b": "", "\ufeff": "",
+    "\u2010": "-", "\u2011": "-", "\u2012": "-",
+})
+
+
+def clean_markdown(text):
+    """Replace odd Unicode spaces/hyphens that render as garbage, trim line ends, and collapse blank runs."""
+    text = text.translate(TYPOGRAPHY_FIXES).replace("\r\n", "\n")
+    text = "\n".join(line.rstrip() for line in text.split("\n"))
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def link_text(value):
+    return re.sub(r"\s+", " ", re.sub(r"([\[\]])", r"\\\1", str(value or ""))).strip()
+
+
+def link_url(url):
+    return str(url).strip().replace(" ", "%20").replace("(", "%28").replace(")", "%29")
+
+
+def format_digest_document(digest, pages, query="", generated_at=None):
+    """Build the saved Markdown file: title, question, clickable citations, and a linked source list."""
+    generated_at = generated_at or datetime.now()
+    urls = {index: link_url(page["url"]) for index, page in enumerate(pages, start=1) if page.get("url")}
+    body = clean_markdown(digest)
+    if urls:
+        body = re.sub(r"\[(\d+)\](?![\(\[:])",
+                      lambda m: f"[[{m.group(1)}]]({urls[int(m.group(1))]})" if int(m.group(1)) in urls else m.group(0), body)
+    meta = []
+    if query:
+        meta.append(f"> **Question:** {' '.join(clean_markdown(query).split())}")
+    meta.append(f"> **Generated:** {generated_at.strftime('%Y-%m-%d %H:%M')} &nbsp;·&nbsp; **Sources:** {len(pages)}")
+    if pages:
+        sources = "\n".join(
+            f"{index}. [{link_text(page['title']) or page['url']}]({link_url(page['url'])})"
+            f" — *{page['url'].split('/')[2] if page['url'].count('/') >= 2 else page['url']}*"
+            for index, page in enumerate(pages, start=1)
+        )
+        source_section = f"## Sources\n\n{sources}"
+    else:
+        source_section = "## Sources\n\n*No external sources were retrieved.*"
+    return "\n".join(["# Research Digest", "", "  \n".join(meta), "", "---", "", body, "", "---", "", source_section, ""])
+
+
+def save_digest(digest, pages, output_dir, query=""):
     output_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
-    path = output_dir / f"digest-{timestamp}.md"
-    sources = "\n".join(
-        f"{index}. {page['title']} - {page['url']}"
-        for index, page in enumerate(pages, start=1)
-    )
-    source_section = f"\n\n## Sources\n\n{sources}" if pages else "\n\nNo external sources were retrieved."
-    path.write_text(f"{digest}{source_section}\n", encoding="utf-8")
+    now = datetime.now()
+    path = output_dir / f"digest-{now.strftime('%Y-%m-%d_%H-%M-%S-%f')}.md"
+    path.write_text(format_digest_document(digest, pages, query, now), encoding="utf-8")
     return path
 
 
@@ -146,7 +186,7 @@ def run_research(query, provider="Auto-select", depth="Balanced", max_results=5,
         "snippet": page["snippet"] or page["page_text"][:240],
         "tag": page["provider"].title() if page["provider"] else "Source",
     } for page in pages]
-    save_digest(digest, pages, Path("digests"))
+    save_digest(digest, pages, Path("digests"), query)
     try:
         history_id, created_at = history_store.save_entry(client_id, query, provider, depth, digest, sources, outcome.selected_provider)
     except OSError as error:
@@ -317,7 +357,7 @@ def main(argv=None):
                  for index, result in enumerate(outcome.results, start=1)]
         print(f"{outcome.summary} Summarizing with {GROQ_MODEL if llm_provider() == 'groq' else args.model}...")
         digest = summarize(query, pages, args.model)
-        path = save_digest(digest, pages, args.output_dir)
+        path = save_digest(digest, pages, args.output_dir, query)
     except (ollama.ResponseError, ollama.RequestError, ConnectionError) as error:
         print(f"Language model failed: {error}. Check your Groq key, or that Ollama is running with the model installed.", file=sys.stderr)
         return 1
