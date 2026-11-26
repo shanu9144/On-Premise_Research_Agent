@@ -4,6 +4,7 @@ import {
   LoaderCircle, Menu, MoreHorizontal, PanelLeft, Search, Send, SlidersHorizontal,
   Sparkles, Trash2,
 } from 'lucide-react'
+import { Analytics } from '@vercel/analytics/react'
 import './App.css'
 
 const DEPLOYED_API = 'https://on-premise-research-agent.onrender.com'
@@ -166,8 +167,10 @@ function App() {
   ]
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <>
+      <Analytics />
+      <div className="app-shell">
+        <aside className="sidebar">
         <div className="brand"><span className="brand-mark"><Sparkles size={16} /></span><span>fieldnotes</span></div>
         <nav className="main-nav" aria-label="Main navigation">{navItems.map((item) => <a key={item.key} className={route === item.key ? 'nav-item active' : 'nav-item'} href={item.href} aria-current={route === item.key ? 'page' : undefined}>{item.icon}{item.label}</a>)}</nav>
         <div className="sidebar-bottom"><button className="nav-item ghost-button" type="button"><SlidersHorizontal size={17} />Preferences</button><button className="nav-item ghost-button" type="button"><CircleHelp size={17} />Help & feedback</button></div>
@@ -180,7 +183,8 @@ function App() {
           : <ResearchPage result={result} onResult={setResult} />}
         <footer className="footer-note page-footer"><span><span className="status-dot"></span>Sources stay visible by default</span><span>Powered by Groq <Sparkles size={13} /></span></footer>
       </main>
-    </div>
+      </div>
+    </>
   )
 }
 
